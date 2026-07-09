@@ -149,11 +149,44 @@ flush.
 
 ## Cost statusline (optional)
 
-OpenRouter usage is billed per token. The
-[openrouter-examples statusline](https://github.com/OpenRouterTeam/openrouter-examples/tree/main/claude-code)
-shows live provider/model/cost in Claude Code's statusline; I run it behind a wrapper that
-falls back to a plain `model · dir · branch` line in non-OpenRouter sessions (statusline
-commands are global, and the cost tracker nags when no OpenRouter token is set).
+OpenRouter usage is billed per token. `statusline/` adds live cost tracking to Claude Code's
+statusline:
+
+```
+xAI: grok-4.5 - $0.0747 - cache discount: $0.04
+```
+
+- `statusline/statusline.ts` — OpenRouter's cost tracker (vendored from
+  [openrouter-examples](https://github.com/OpenRouterTeam/openrouter-examples/tree/main/claude-code),
+  MIT): reads the session transcript, resolves each `gen-*` message against OpenRouter's
+  `/v1/generation` API, and accumulates provider / model / cost / cache discount.
+- `statusline/statusline.sh` — my session-aware wrapper. A `statusLine` command in
+  `settings.json` runs in **every** Claude Code session, but the cost tracker only makes sense
+  where an OpenRouter token exists — elsewhere it just nags. The wrapper detects OpenRouter
+  sessions (an `sk-or-` auth token or an openrouter base URL) and runs the tracker there;
+  everything else gets a clean `model  dir   branch` line. It also prefers `bun` for
+  instant native-TypeScript startup (statuslines render constantly), falling back to `npx tsx`.
+
+Install:
+
+```bash
+mkdir -p ~/.claude/hooks
+install -m 0755 statusline/statusline.sh ~/.claude/hooks/statusline.sh
+install -m 0644 statusline/statusline.ts ~/.claude/hooks/statusline.ts
+```
+
+Then add to `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/hooks/statusline.sh"
+  }
+}
+```
+
+Requires `bun` or `npx`; the fallback line uses `jq` if available.
 
 ## License
 
