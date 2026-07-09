@@ -154,3 +154,7 @@ OpenRouter usage is billed per token. The
 shows live provider/model/cost in Claude Code's statusline; I run it behind a wrapper that
 falls back to a plain `model · dir · branch` line in non-OpenRouter sessions (statusline
 commands are global, and the cost tracker nags when no OpenRouter token is set).
+
+## License
+
+[MIT](LICENSE)
