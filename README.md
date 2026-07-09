@@ -68,20 +68,39 @@ behaves exactly like the first-party API, so it sets `OPENROUTER_NO_PROXY=1` and
 
 ## Install
 
-```bash
-# 1. Key
-echo 'OPENROUTER_API_KEY="sk-or-..."' >> ~/.claude/.env.local
+Works on macOS and Linux. Requires `python3` (the proxy is stdlib-only) and
+[Claude Code](https://code.claude.com/docs/en/overview) itself.
 
-# 2. Scripts onto your PATH
+```bash
+# one-liner (no clone needed)
+curl -fsSL https://raw.githubusercontent.com/cotdp/claude-code-openrouter/main/install.sh | sh
+
+# or from a clone
+git clone https://github.com/cotdp/claude-code-openrouter
+cd claude-code-openrouter && ./install.sh
+```
+
+The installer puts everything in `~/.local/bin` (override with `PREFIX=~/bin ./install.sh`),
+checks your dependencies and PATH, and tells you if the API key is missing. Uninstall with
+`./install.sh --uninstall`.
+
+```bash
+# add your key (https://openrouter.ai/settings/keys), then go
+echo 'OPENROUTER_API_KEY="sk-or-..."' >> ~/.claude/.env.local
+claude-grok
+```
+
+<details>
+<summary>Manual install (no installer)</summary>
+
+```bash
 install -m 0755 claude-openrouter.sh        ~/.local/bin/claude-openrouter
 install -m 0755 claude-openrouter-proxy.py  ~/.local/bin/claude-openrouter-proxy.py
 for a in grok glm fugu fusion kimi qwen fable-5; do
   install -m 0755 "claude-$a.sh" ~/.local/bin/"claude-$a"
 done
-
-# 3. Go
-claude-grok
 ```
+</details>
 
 > **Note:** the wrapper launches Claude Code with `--dangerously-skip-permissions`
 > (my personal preference for these sessions). Remove that flag from the last line of

@@ -75,10 +75,18 @@ if [ -z "${OPENROUTER_API_KEY:-}" ]; then
 fi
 
 # --- resolve the real claude binary (avoid recursing into this wrapper) ------
+list_claude_candidates() {
+  # `command -v -a` is not POSIX (dash on Debian/Ubuntu lacks it); fall back
+  # to `which -a`, then plain `command -v`.
+  command -v -a claude 2>/dev/null && return 0
+  which -a claude 2>/dev/null && return 0
+  command -v claude 2>/dev/null
+}
+
 resolve_claude() {
   self="$(command -v -- "$0" 2>/dev/null || echo "$0")"
   # newline-safe iteration: claude path may contain spaces
-  found="$(command -v -a claude 2>/dev/null | while IFS= read -r c; do
+  found="$(list_claude_candidates | while IFS= read -r c; do
     [ "$c" = "$self" ] && continue
     printf '%s\n' "$c"
     break
