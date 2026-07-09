@@ -165,9 +165,24 @@ xAI: grok-4.5 - $0.0747 - cache discount: $0.04
 - `statusline/statusline.sh` — my session-aware wrapper. A `statusLine` command in
   `settings.json` runs in **every** Claude Code session, but the cost tracker only makes sense
   where an OpenRouter token exists — elsewhere it just nags. The wrapper detects OpenRouter
-  sessions (an `sk-or-` auth token or an openrouter base URL) and runs the tracker there;
-  everything else gets a clean `model  dir   branch` line. It also prefers `bun` for
-  instant native-TypeScript startup (statuslines render constantly), falling back to `npx tsx`.
+  sessions (an `sk-or-` auth token or an openrouter base URL) and runs the tracker there.
+  Subscription sessions instead get `model  dir   branch` plus your **plan usage** — the
+  5-hour window, 7-day window, and any scoped model quota (Fable, Opus, …) — as mini progress
+  bars colored by utilization, each with a reset countdown:
+
+  ```
+  Opus 4.8  .claude   main  5h █████░ 80% ↻31m  7d █░░░░░ 16% ↻10h31m  Fable ██░░░░ 32% ↻10h31m
+  ```
+
+  Prefer the lighter first-iteration look (`5h 80%  7d 16%  Fable 32%`)? Pass `--compact` on
+  the command in `settings.json` (`"command": "~/.claude/hooks/statusline.sh --compact"`) or
+  set `CLAUDE_USAGE_STYLE=compact`.
+
+  Usage comes from the unofficial `api.anthropic.com/api/oauth/usage` endpoint (OAuth token
+  read from the macOS Keychain, or `~/.claude/.credentials.json` on Linux), served from a 60s
+  cache and refreshed by a detached background job so the render path never blocks on the
+  network. Tune with `CLAUDE_USAGE_TTL` (seconds; `0` disables the segment). The wrapper
+  prefers `bun` for instant native-TypeScript startup, falling back to `npx tsx`.
 
 Install:
 
