@@ -81,8 +81,10 @@ cd claude-code-openrouter && ./install.sh
 ```
 
 The installer puts everything in `~/.local/bin` (override with `PREFIX=~/bin ./install.sh`),
-checks your dependencies and PATH, and tells you if the API key is missing. Uninstall with
-`./install.sh --uninstall`.
+checks your dependencies and PATH, and tells you if the API key is missing. Add
+`--statusline` to also install the [cost-tracking statusline](#cost-statusline-optional)
+(one-liner form: `… | sh -s -- --statusline`). Uninstall with `./install.sh --uninstall`
+(add `--statusline` to remove that too).
 
 ```bash
 # add your key (https://openrouter.ai/settings/keys), then go
@@ -170,12 +172,19 @@ xAI: grok-4.5 - $0.0747 - cache discount: $0.04
 Install:
 
 ```bash
+./install.sh --statusline    # copies both files into ~/.claude/hooks/
+```
+
+or manually:
+
+```bash
 mkdir -p ~/.claude/hooks
 install -m 0755 statusline/statusline.sh ~/.claude/hooks/statusline.sh
 install -m 0644 statusline/statusline.ts ~/.claude/hooks/statusline.ts
 ```
 
-Then add to `~/.claude/settings.json`:
+Then add to `~/.claude/settings.json` (the installer prints this snippet; it never edits
+your settings itself):
 
 ```json
 {

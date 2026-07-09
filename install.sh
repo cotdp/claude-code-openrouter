@@ -3,12 +3,15 @@
 #
 # From a clone:      ./install.sh
 # One-liner:         curl -fsSL https://raw.githubusercontent.com/cotdp/claude-code-openrouter/main/install.sh | sh
+# With statusline:   ./install.sh --statusline        (or: ... | sh -s -- --statusline)
 # Custom location:   PREFIX=~/bin ./install.sh
-# Remove:            ./install.sh --uninstall
+# Remove:            ./install.sh --uninstall         (add --statusline to remove that too)
 #
 # The installer copies the launcher, the proxy, and the model aliases into
 # $PREFIX (default ~/.local/bin). When run outside a clone (e.g. piped from
-# curl) it downloads the scripts from GitHub instead.
+# curl) it downloads the scripts from GitHub instead. --statusline additionally
+# copies the cost-tracking statusline into ~/.claude/hooks/ and prints the
+# settings.json snippet to enable it (your settings.json is never edited).
 set -eu
 
 REPO_RAW="${CLOR_REPO_RAW:-https://raw.githubusercontent.com/cotdp/claude-code-openrouter/main}"
@@ -31,8 +34,23 @@ say()  { printf '%s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 
+HOOKS_DIR="$HOME/.claude/hooks"
+SL_FILES="statusline.sh statusline.ts"
+
+# --- options --------------------------------------------------------------------
+UNINSTALL=0
+STATUSLINE=0
+for opt in "$@"; do
+  case "$opt" in
+    --uninstall)  UNINSTALL=1 ;;
+    --statusline) STATUSLINE=1 ;;
+    --install)    ;;
+    *) die "unknown option '$opt' (supported: --statusline, --uninstall)" ;;
+  esac
+done
+
 # --- uninstall ----------------------------------------------------------------
-if [ "${1:-}" = "--uninstall" ]; then
+if [ "$UNINSTALL" = 1 ]; then
   removed=0
   for pair in $FILES; do
     name="${pair%%:*}"
@@ -42,12 +60,22 @@ if [ "${1:-}" = "--uninstall" ]; then
       removed=$((removed + 1))
     fi
   done
-  [ "$removed" -gt 0 ] || say "nothing to remove in $PREFIX"
+  if [ "$STATUSLINE" = 1 ]; then
+    for f in $SL_FILES; do
+      if [ -e "$HOOKS_DIR/$f" ]; then
+        rm -f "$HOOKS_DIR/$f"
+        say "removed $HOOKS_DIR/$f"
+        removed=$((removed + 1))
+      fi
+    done
+    say "note: remove the statusLine block from ~/.claude/settings.json yourself."
+  elif [ -e "$HOOKS_DIR/statusline.sh" ]; then
+    say "note: statusline left in $HOOKS_DIR (add --statusline to remove it too)."
+  fi
+  [ "$removed" -gt 0 ] || say "nothing to remove"
   say "note: ~/.claude/.env.local (your API key) was left untouched."
   exit 0
 fi
-
-[ "${1:-}" = "" ] || [ "${1:-}" = "--install" ] || die "unknown option '$1' (try --uninstall)"
 
 # --- dependency checks ----------------------------------------------------------
 command -v python3 >/dev/null 2>&1 \
@@ -76,6 +104,12 @@ if [ -z "$srcdir" ]; then
     file="${pair#*:}"
     curl -fsSL "$REPO_RAW/$file" -o "$tmpdir/$file" || die "download failed: $file"
   done
+  if [ "$STATUSLINE" = 1 ]; then
+    mkdir -p "$tmpdir/statusline"
+    for f in $SL_FILES; do
+      curl -fsSL "$REPO_RAW/statusline/$f" -o "$tmpdir/statusline/$f" || die "download failed: statusline/$f"
+    done
+  fi
   srcdir="$tmpdir"
 fi
 
@@ -87,6 +121,19 @@ for pair in $FILES; do
   install -m 0755 "$srcdir/$file" "$PREFIX/$name"
   say "installed $PREFIX/$name"
 done
+
+if [ "$STATUSLINE" = 1 ]; then
+  mkdir -p "$HOOKS_DIR"
+  for f in $SL_FILES; do
+    [ -f "$srcdir/statusline/$f" ] || die "missing source file: $srcdir/statusline/$f"
+    [ -e "$HOOKS_DIR/$f" ] && sl_updated=1 || sl_updated=0
+    install -m 0755 "$srcdir/statusline/$f" "$HOOKS_DIR/$f"
+    say "$([ "$sl_updated" = 1 ] && echo updated || echo installed) $HOOKS_DIR/$f"
+  done
+  if ! command -v bun >/dev/null 2>&1 && ! command -v npx >/dev/null 2>&1; then
+    warn "statusline needs bun or npx (Node) at runtime — install one of them."
+  fi
+fi
 
 # --- post-install checks ---------------------------------------------------------
 case ":$PATH:" in
@@ -104,6 +151,23 @@ else
   say ""
   say "Next step — add your OpenRouter API key (https://openrouter.ai/settings/keys):"
   say "  mkdir -p ~/.claude && echo 'OPENROUTER_API_KEY=\"sk-or-...\"' >> ~/.claude/.env.local"
+fi
+
+if [ "$STATUSLINE" = 1 ]; then
+  SETTINGS="$HOME/.claude/settings.json"
+  say ""
+  if [ -r "$SETTINGS" ] && grep -q '"statusLine"' "$SETTINGS" 2>/dev/null; then
+    say "statusline: settings.json already has a statusLine entry — point it at:"
+    say "  $HOOKS_DIR/statusline.sh"
+  else
+    say "statusline: add this to $SETTINGS to enable it:"
+    say '  {'
+    say '    "statusLine": {'
+    say '      "type": "command",'
+    say "      \"command\": \"$HOOKS_DIR/statusline.sh\""
+    say '    }'
+    say '  }'
+  fi
 fi
 
 say ""
