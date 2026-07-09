@@ -70,6 +70,15 @@ refresh_usage() {  # runs in a detached subshell; never blocks the render
   printf '%s' "$out" > "$CACHE.tmp.$$" && mv -f "$CACHE.tmp.$$" "$CACHE"
 }
 
+# File mtime, portably. GNU first (-c %Y); BSD/macOS fallback (-f %m). Order
+# matters: GNU stat treats `-f %m` as filesystem mode and still emits a
+# "File: ..." block on stdout despite erroring, which would poison arithmetic.
+# Output is validated numeric; anything else becomes 0 (treated as ancient).
+mtime_of() {
+  m="$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0)"
+  case "$m" in ''|*[!0-9]*) echo 0 ;; *) echo "$m" ;; esac
+}
+
 usage_segment() {
   [ "$TTL" -gt 0 ] 2>/dev/null || return 0
   command -v jq >/dev/null 2>&1 || return 0
@@ -77,8 +86,7 @@ usage_segment() {
   now="$(date +%s)"
   age=$((TTL + 1))
   if [ -f "$CACHE" ]; then
-    mtime="$(stat -f %m "$CACHE" 2>/dev/null || stat -c %Y "$CACHE" 2>/dev/null || echo 0)"
-    age=$((now - mtime))
+    age=$((now - $(mtime_of "$CACHE")))
   fi
 
   if [ "$age" -gt "$TTL" ]; then
@@ -86,7 +94,8 @@ usage_segment() {
       ( trap 'rmdir "$LOCK" 2>/dev/null' EXIT; refresh_usage ) >/dev/null 2>&1 &
     else
       # break a stale lock (crashed refresher); next render retries
-      lmtime="$(stat -f %m "$LOCK" 2>/dev/null || stat -c %Y "$LOCK" 2>/dev/null || echo "$now")"
+      lmtime="$(mtime_of "$LOCK")"
+      [ "$lmtime" = 0 ] && lmtime="$now"
       [ $((now - lmtime)) -gt 60 ] && rmdir "$LOCK" 2>/dev/null
     fi
   fi
