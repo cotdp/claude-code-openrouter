@@ -12,6 +12,7 @@ claude-qwen          # qwen/qwen3.7-plus
 claude-fugu          # sakana/fugu-ultra
 claude-fusion        # openrouter/fusion
 claude-sol           # openai/gpt-5.6-sol (MCP enabled; proxy still needed)
+claude-sol-pro       # openai/gpt-5.6-sol-pro (same quadrant as sol)
 claude-fable-5       # anthropic/claude-fable-5 (native: no proxy, MCP enabled)
 claude-openrouter --model any/other-model
 ```
