@@ -5,17 +5,22 @@ Run [Claude Code](https://code.claude.com/docs/en/overview) against any model on
 compatibility problems fixed automatically.
 
 ```
-claude-grok          # x-ai/grok-4.5
-claude-glm           # z-ai/glm-5.2
-claude-kimi          # moonshotai/kimi-k2.7-code
-claude-qwen          # qwen/qwen3.7-plus
-claude-fugu          # sakana/fugu-ultra
-claude-fusion        # openrouter/fusion
-claude-sol           # openai/gpt-5.6-sol (MCP enabled; proxy still needed)
-claude-sol-pro       # openai/gpt-5.6-sol-pro (same quadrant as sol)
-claude-fable-5       # anthropic/claude-fable-5 (native: no proxy, MCP enabled)
+claude-grok          # x-ai/grok-4.5          (MCP off — see note)
+claude-glm           # z-ai/glm-5.2           (MCP on)
+claude-kimi          # moonshotai/kimi-k2.7-code   (MCP on)
+claude-qwen          # qwen/qwen3.7-plus      (MCP on)
+claude-fugu          # sakana/fugu-ultra      (MCP on)
+claude-fusion        # openrouter/fusion      (MCP on)
+claude-sol           # openai/gpt-5.6-sol     (MCP on; proxy still needed)
+claude-sol-pro       # openai/gpt-5.6-sol-pro (MCP on; proxy still needed)
+claude-fable-5       # anthropic/claude-fable-5   (native: no proxy, MCP on)
 claude-openrouter --model any/other-model
 ```
+
+Every bundled model runs with **MCP enabled except grok** — xAI's strict
+function-calling validator is the only one that rejects the open-ended-map tool
+schemas several MCP servers use (verified end-to-end with the full tool set,
+2026-07-10).
 
 ## The two problems this solves
 
@@ -70,7 +75,7 @@ support. The two problems are independent axes, so each model lands in one quadr
 | | provider accepts MCP schemas | provider rejects them |
 |---|---|---|
 | **thinking blocks signed** | `--no-proxy --enable-mcp` (fable-5, native Anthropic) | — |
-| **thinking blocks unsigned** | `--enable-mcp` (gpt-5.6-sol) | *default* (grok-4.5, …) |
+| **thinking blocks unsigned** | `--enable-mcp` (glm, kimi, qwen, fugu, fusion, sol, sol-pro) | *default* (grok-4.5) |
 
 To place a new model, test both axes:
 

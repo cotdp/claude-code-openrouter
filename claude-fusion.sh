@@ -1,4 +1,5 @@
 #!/bin/sh
-# claude-fusion — thin alias for `claude-openrouter --model openrouter/fusion`.
-# Any extra args are forwarded to claude-openrouter (hence to claude).
-exec claude-openrouter --model openrouter/fusion "$@"
+# claude-fusion — `claude-openrouter --model openrouter/fusion --enable-mcp`.
+# MCP verified working (full tool set, 2026-07-10); proxy stays on for the
+# empty-signature thinking blocks. Extra args forwarded to claude-openrouter.
+exec claude-openrouter --model openrouter/fusion --enable-mcp "$@"

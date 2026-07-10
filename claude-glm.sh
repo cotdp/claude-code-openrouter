@@ -1,4 +1,5 @@
 #!/bin/sh
-# claude-glm — thin alias for `claude-openrouter --model z-ai/glm-5.2`.
-# Any extra args are forwarded to claude-openrouter (hence to claude).
-exec claude-openrouter --model z-ai/glm-5.2 "$@"
+# claude-glm — `claude-openrouter --model z-ai/glm-5.2 --enable-mcp`.
+# MCP verified working (full tool set, 2026-07-10); proxy stays on for the
+# empty-signature thinking blocks. Extra args forwarded to claude-openrouter.
+exec claude-openrouter --model z-ai/glm-5.2 --enable-mcp "$@"
