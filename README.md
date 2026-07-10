@@ -240,6 +240,42 @@ your settings itself):
 
 Requires `bun` or `npx`; the fallback line uses `jq` if available.
 
+## Prior art / how this differs
+
+Pointing Claude Code at OpenRouter is well-trodden ground — the wrapper here is table
+stakes. What's uncommon is *how* this project handles the two failure modes non-Anthropic
+models hit. A survey of the ecosystem (2026-07) put it in context:
+
+| Project | Approach | Reasoning-block handling | MCP schema |
+|---|---|---|---|
+| [claude-code-router](https://github.com/musistudio/claude-code-router) (35k★) | full Anthropic↔OpenAI translation router + desktop app | converts `reasoning_content`→thinking; open issues on signature/thinking bugs ([#1431](https://github.com/musistudio/claude-code-router/issues/1431), #1382, #1397) | — |
+| [y-router](https://github.com/luohy15/y-router) (381★) | Cloudflare Worker translation | none (archived Jan 2026 → redirects to OpenRouter's official guide) | — |
+| [open-claude-router](https://github.com/elusznik/open-claude-router) | y-router fork | **injects** a placeholder signature `"openrouter-reasoning"` | — |
+| [LiteLLM](https://docs.litellm.ai/docs/anthropic_unified) | Anthropic-compatible proxy | loses thinking blocks; signature round-trip PRs stalled | — |
+| [OpenRouter official](https://openrouter.ai/docs/cookbook/coding-agents/claude-code-integration) | env-var only, "Anthropic Skin" | passes thinking through — fine for Anthropic models, **blank replies for grok/GLM/Kimi** | — |
+| **this project** | native Anthropic skin + response-only proxy | **strips** empty-signature `thinking`/`redacted_thinking`, re-indexes survivors | detects the incompatible open-map shape → per-model MCP toggle |
+
+Two things fall out of that table:
+
+- **Reasoning blocks.** OpenRouter returns `thinking`/`redacted_thinking` blocks with empty
+  signatures for non-Anthropic reasoning models, and Claude Code discards the whole message —
+  the [widely reported](https://github.com/anthropics/claude-code/issues/31326) blank-reply
+  bug. The three fixes seen in the wild are *inject a fake signature*, *preserve/repair the
+  real one*, or *disable reasoning*. This project instead **strips the blocks and re-indexes
+  the survivors** — the model's text/tool_use is what Claude Code wanted anyway, and there's
+  no signature to get wrong. I didn't find that strip-and-reindex approach in any other tool.
+
+- **Architecture.** The routers above re-translate OpenAI↔Anthropic themselves. This rides
+  OpenRouter's *native* Anthropic endpoint (`/v1/messages`) and patches only the response
+  stream, so the whole thing is a ~250-line stdlib proxy rather than a routing engine.
+
+- **MCP schemas.** No other project I found detects the open-ended-map tool schemas
+  (`propertyNames` + schema-valued `additionalProperties`) that 400 strict validators like
+  xAI, or gates MCP per-model on it. Here it's a tested per-model flag (see the matrix above).
+
+Not a claim to be first at everything — the *category* is crowded — just that the
+strip-and-reindex proxy and the schema-aware MCP gating are the parts I haven't seen elsewhere.
+
 ## License
 
 [MIT](LICENSE)
