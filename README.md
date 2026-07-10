@@ -11,6 +11,7 @@ claude-kimi          # moonshotai/kimi-k2.7-code
 claude-qwen          # qwen/qwen3.7-plus
 claude-fugu          # sakana/fugu-ultra
 claude-fusion        # openrouter/fusion
+claude-sol           # openai/gpt-5.6-sol (MCP enabled; proxy still needed)
 claude-fable-5       # anthropic/claude-fable-5 (native: no proxy, MCP enabled)
 claude-openrouter --model any/other-model
 ```
@@ -62,9 +63,30 @@ mid-stream upstream failures (surfaced to Claude Code as a proper SSE `error` ev
 a hang or a silent empty reply).
 
 The alias scripts (`claude-grok`, `claude-glm`, …) are one-liners that call
-`claude-openrouter --model <slug>`. `claude-fable-5` is the exception: a native Anthropic model
-behaves exactly like the first-party API, so it sets `OPENROUTER_NO_PROXY=1` and
-`OPENROUTER_ENABLE_MCP=1` for full-feature parity (signed thinking, MCP servers).
+`claude-openrouter --model <slug>`, plus the capability flags the model has been tested to
+support. The two problems are independent axes, so each model lands in one quadrant:
+
+| | provider accepts MCP schemas | provider rejects them |
+|---|---|---|
+| **thinking blocks signed** | `--no-proxy --enable-mcp` (fable-5, native Anthropic) | — |
+| **thinking blocks unsigned** | `--enable-mcp` (gpt-5.6-sol) | *default* (grok-4.5, …) |
+
+To place a new model, test both axes:
+
+```bash
+# request side: does the provider accept an open-ended-map tool schema? (200 = yes)
+# use a propertyNames + schema-valued additionalProperties tool, as in Notion's MCP
+# response side: does it return thinking blocks with empty signatures?
+curl -s https://openrouter.ai/api/v1/messages -H "Authorization: Bearer $KEY" \
+  -H "anthropic-version: 2023-06-01" -H "content-type: application/json" \
+  -d '{"model":"<slug>","max_tokens":200,"messages":[{"role":"user","content":"hi"}]}' \
+  | jq '[.content[] | select(.type=="thinking") | .signature == ""]'
+```
+
+Then wire the alias with the matching flags — or just try
+`claude-openrouter --model <slug> --enable-mcp` and watch for
+`API Error: 400 Provider returned error` (schemas rejected) or empty replies without
+the proxy (unsigned thinking).
 
 ## Install
 
@@ -120,8 +142,8 @@ All via environment variables:
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api` | upstream endpoint |
 | `OPENROUTER_API_TIMEOUT_MS` | `1200000` | Claude Code request cap (20 min) |
 | `OPENROUTER_PROXY_IDLE_TIMEOUT_MS` | `1200000` | proxy per-socket-op upstream timeout |
-| `OPENROUTER_NO_PROXY=1` | – | bypass the proxy (direct to OpenRouter) |
-| `OPENROUTER_ENABLE_MCP=1` | – | keep MCP servers on (may 400, see problem #2) |
+| `OPENROUTER_NO_PROXY=1` | – | bypass the proxy (direct to OpenRouter); also `--no-proxy` |
+| `OPENROUTER_ENABLE_MCP=1` | – | keep MCP servers on (may 400, see problem #2); also `--enable-mcp` |
 | `CLOR_DEBUG=<dir>` | – | dump raw-in/filtered-out streams for debugging |
 
 ## Tests

@@ -1,13 +1,10 @@
 #!/bin/sh
-# claude-fable-5 — `claude-openrouter --model anthropic/claude-fable-5`.
+# claude-fable-5 — `claude-openrouter --model anthropic/claude-fable-5 --no-proxy --enable-mcp`.
 #
-# This is a native Anthropic model served through OpenRouter's Anthropic skin, so
-# it behaves exactly like the first-party API: properly signed thinking blocks and
-# tool schemas Claude Code's clients accept. That means it does NOT need the
-# thinking-block-stripping proxy and it CAN use MCP servers — so we bypass the
-# proxy and re-enable MCP for full-feature parity.
+# A native Anthropic model served through OpenRouter's Anthropic skin behaves
+# exactly like the first-party API: properly signed thinking blocks and tool
+# schemas Claude Code's clients accept. So it needs neither workaround — the
+# thinking-block proxy is bypassed and MCP servers stay enabled.
 #
 # Any extra args are forwarded to claude-openrouter (hence to claude).
-OPENROUTER_NO_PROXY=1 \
-OPENROUTER_ENABLE_MCP=1 \
-exec claude-openrouter --model anthropic/claude-fable-5 "$@"
+exec claude-openrouter --model anthropic/claude-fable-5 --no-proxy --enable-mcp "$@"

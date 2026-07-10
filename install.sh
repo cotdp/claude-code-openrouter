@@ -27,6 +27,7 @@ claude-fugu:claude-fugu.sh
 claude-fusion:claude-fusion.sh
 claude-kimi:claude-kimi.sh
 claude-qwen:claude-qwen.sh
+claude-sol:claude-sol.sh
 claude-fable-5:claude-fable-5.sh
 "
 

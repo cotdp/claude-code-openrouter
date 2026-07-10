@@ -30,9 +30,16 @@ BASE_URL="${OPENROUTER_BASE_URL:-https://openrouter.ai/api}"
 ENV_FILE="${OPENROUTER_ENV_FILE:-$HOME/.claude/.env.local}"
 API_TIMEOUT="${OPENROUTER_API_TIMEOUT_MS:-1200000}"
 
-# --- parse our own --model flag, forward everything else to claude -----------
+# --- parse our own flags, forward everything else to claude ------------------
 # Rotation trick: pop each original arg once; consumed flags drop out, the rest
 # are pushed to the end preserving spaces/quoting. argc tracks only originals.
+#
+# The two capability knobs are independent, giving four quadrants:
+#   proxy on  + MCP off   default            (grok-4.5 and most reasoning models)
+#   proxy on  + MCP on    --enable-mcp       (e.g. gpt-5.6-sol: schemas OK,
+#                                             thinking blocks still unsigned)
+#   proxy off + MCP on    --no-proxy --enable-mcp   (native Anthropic models)
+#   proxy off + MCP off   --no-proxy         (debugging)
 MODEL="${OPENROUTER_MODEL:-x-ai/grok-4.5}"
 argc=$#
 while [ "$argc" -gt 0 ]; do
@@ -48,6 +55,12 @@ while [ "$argc" -gt 0 ]; do
         echo "claude-openrouter: --model requires a value" >&2
         exit 2
       fi
+      continue ;;
+    --enable-mcp)
+      OPENROUTER_ENABLE_MCP=1
+      continue ;;
+    --no-proxy)
+      OPENROUTER_NO_PROXY=1
       continue ;;
   esac
   set -- "$@" "$arg"
