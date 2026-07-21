@@ -7,7 +7,7 @@ compatibility problems fixed automatically.
 ```
 claude-grok          # x-ai/grok-4.5          (MCP off — see note)
 claude-glm           # z-ai/glm-5.2           (MCP on)
-claude-kimi          # moonshotai/kimi-k2.7-code   (MCP on)
+claude-kimi          # moonshotai/kimi-k3          (MCP on)
 claude-qwen          # qwen/qwen3.7-plus      (MCP on)
 claude-fugu          # sakana/fugu-ultra      (MCP on)
 claude-fusion        # openrouter/fusion      (MCP on)
