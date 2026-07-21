@@ -81,7 +81,7 @@ proxy and on to OpenRouter. **The proxy never reads the key file.**
 |---|---|---|---|---|
 | claude-grok | x-ai/grok-4.5 | on | **off** | xAI rejects open-map schemas |
 | claude-glm | z-ai/glm-5.2 | on | on | tested OK |
-| claude-kimi | moonshotai/kimi-k2.7-code | on | on | tested OK |
+| claude-kimi | moonshotai/kimi-k3 | on | on | tested OK |
 | claude-qwen | qwen/qwen3.7-plus | on | on | tested OK |
 | claude-fugu | sakana/fugu-ultra | on | on | tested OK |
 | claude-fusion | openrouter/fusion | on | on | tested OK |
